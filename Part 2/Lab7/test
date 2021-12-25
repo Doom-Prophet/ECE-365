@@ -1,0 +1,50 @@
+        genlist = []
+        gen_separate = genome.split('>')[1:]
+        gendict = {}
+        penalties = {'match': 1,'mismatch': -1,'gap': -1}
+        score_max = 0
+        outstr = []
+
+        for read in gen_separate:
+            read = read.replace('\n','')
+            for num in range(10):
+                read = read.replace(str(num),'')
+            genlist.append(read.replace('chr',''))
+        leng = len(list_of_reads[0]) // 4
+        
+        for ch_index in range(len(genlist)):
+            chromo = genlist[ch_index]
+            for pos in range(len(chromo) - leng + 1):
+                pattern = chromo[pos: pos + leng]
+                index_tuple = (ch_index, pos)
+                if pattern not in gendict:
+                    gendict[pattern] = [index_tuple]
+                else:
+                    gendict[pattern].append(index_tuple)
+                    
+        for read in list_of_reads:
+            score_max = 0
+            outlist = []
+            for pos in range(len(read)- leng + 1):
+                read_pattern = read[pos : pos + leng]
+                if read_pattern in gendict:
+                    index_list = gendict[read_pattern]
+                    for index_tuple in index_list:
+                        ch_index = index_tuple[0]
+                        pos_index = index_tuple[1]
+                        chromo = genlist[ch_index]
+                        if len(read)<=len(chromo):
+                            R = min(len(chromo) - len(list_of_reads[0]), pos_index + len(list_of_reads[0]))
+                            L = max(0, pos_index - len(list_of_reads[0]))
+                            for head in range(L, R + 1):
+                                genome_pattern = chromo[head : head + len(list_of_reads[0])]
+                                result = self.smith_waterman_alignment(read,genome_pattern, penalties)
+                                index = "chr%d:%d"%(ch_index + 1, head + 1)
+                                if result > score_max:
+                                    outlist = [index]
+                                    score_max = score
+                                elif result == score_max and (index not in outlist):
+                                    outlist.append(index)
+            outstr.append(outlist)
+
+        return outstr
